@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -54,7 +54,7 @@ class Checkpoint:
     # Assert the instance is checkpoint-able
     for prop in ("state_dict", "load_state_dict"):
       if not callable(getattr(res, prop, None)):
-        raise tools.UserException("Given instance %r is not checkpoint-able (missing callable member %r)" % (instance, prop))
+        raise tools.UserException(f"Given instance {instance!r} is not checkpoint-able (missing callable member {prop!r})")
     # Return the instance and the associated storage key
     return res, tools.fullqual(cls)
 
@@ -79,7 +79,7 @@ class Checkpoint:
     instance, key = type(self)._prepare(instance)
     # Snapshot the state dictionary
     if not overwrite and key in self._store:
-      raise tools.UserException("An snapshot for %r is already stored in the checkpoint" % key)
+      raise tools.UserException(f"A snapshot for {key!r} is already stored in the checkpoint")
     if deepcopy:
       self._store[key] = copy.deepcopy(instance.state_dict())
     else:
@@ -104,9 +104,9 @@ class Checkpoint:
       instance.load_state_dict(self._store[key])
       # Check if restoring a reference
       if __debug__ and not self._copied[key]:
-        tools.warning("Restoring a state dictionary reference in an instance of %s; the resulting behavior may not be the one expected" % tools.fullqual(type(instance)))
+        tools.warning(f"Restoring a state dictionary reference in an instance of {tools.fullqual(type(instance))}; the resulting behavior may not be the one expected")
     elif not nothrow:
-      raise tools.UserException("No snapshot for %r is available in the checkpoint" % key)
+      raise tools.UserException(f"No snapshot for {key!r} is available in the checkpoint")
     # Enable chaining
     return self
 
@@ -141,7 +141,7 @@ class Checkpoint:
     """
     # Check if file already exists
     if pathlib.Path(filepath).exists() and not overwrite:
-      raise tools.UserException("Unable to save checkpoint in existing file %r (overwriting has not been allowed by the caller)" % str(filepath))
+      raise tools.UserException(f"Unable to save checkpoint in existing file {str(filepath)!r} (overwriting has not been allowed by the caller)")
     # (Over)write the file
     torch.save(self._store, filepath)
     # Enable chaining

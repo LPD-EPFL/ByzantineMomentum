@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -16,7 +16,7 @@
 
 import tools
 if __name__ == "__main__":
-  raise tools.UserException("Module %r is not to be used as the main module" % (__file__,))
+  raise tools.UserException(f"Module {__file__!r} is not to be used as the main module")
 
 import aggregators
 import experiments
@@ -26,6 +26,7 @@ import json
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy
 import pathlib
 import pandas
 import threading
@@ -74,7 +75,7 @@ except Exception as err:
     Args:
       closure Ignored parameter
     """
-    tools.warning("GTK 3.0 is unavailable: %s" % (err,))
+    tools.warning(f"GTK 3.0 is unavailable: {err}")
 
 # ---------------------------------------------------------------------------- #
 # Data frame columns selection helper
@@ -138,7 +139,7 @@ class _DataFrameDisplayWindow(Gtk.Window):
       Converted data to string
     """
     if type(x) is float:
-      return "%e" % x
+      return f"{x:e}"
     return str(x).strip()
 
   def __init__(self, data, title="Display data"):
@@ -195,13 +196,13 @@ class Session:
       path_results = pathlib.Path(path_results)
     # Ensure directory exist
     if not path_results.exists():
-      raise tools.UserException("Result directory %r cannot be accessed or does not exist" % str(path_results))
+      raise tools.UserException(f"Result directory {str(path_results)} cannot be accessed or does not exist")
     # Load configuration string
     path_config = path_results / "config"
     try:
       data_config = path_config.read_text().strip()
     except Exception as err:
-      tools.warning("Result directory %r: unable to read configuration (%s)" % (str(path_results), err))
+      tools.warning(f"Result directory {str(path_results)}: unable to read configuration ({err})")
       data_config = None
     # Load configuration json
     path_json = path_results / "config.json"
@@ -209,7 +210,7 @@ class Session:
       with path_json.open("r") as fd:
         data_json = json.load(fd)
     except Exception as err:
-      tools.warning("Result directory %r: unable to read JSON configuration (%s)" % (str(path_results), err))
+      tools.warning(f"Result directory {str(path_results)}: unable to read JSON configuration ({err})")
       data_json = None
     # Load training data
     path_study = path_results / "study"
@@ -217,7 +218,7 @@ class Session:
       data_study = pandas.read_csv(path_study, sep="\t", index_col=0, na_values="     nan")
       data_study.index.name="Step number"
     except Exception as err:
-      tools.warning("Result directory %r: unable to read training data (%s)" % (str(path_results), err))
+      tools.warning(f"Result directory {str(path_results)}: unable to read training data ({err})")
       data_study = None
     # Load evaluation data
     path_eval = path_results / "eval"
@@ -225,7 +226,7 @@ class Session:
       data_eval = pandas.read_csv(path_eval, sep="\t", index_col=0)
       data_eval.index.name="Step number"
     except Exception as err:
-      tools.warning("Result directory %r: unable to read evaluation data (%s)" % (str(path_results), err))
+      tools.warning(f"Result directory {str(path_results)}: unable to read evaluation data ({err})")
       data_eval = None
     # Merge data frames (if both are here)
     if data_study is not None and data_eval is not None:
@@ -238,6 +239,7 @@ class Session:
     self.config = data_config
     self.json   = data_json
     self.data   = data
+    self.thresh = None
 
   def get(self, *only_columns):
     """ Get (some of) the data.
@@ -260,7 +262,7 @@ class Session:
     """
     global display
     # Display the (selected sub)set
-    display(self.get(*only_columns), title=("Session data%s for %r" % (" (subset)" if len(only_columns) > 0 else "", self.name)))
+    display(self.get(*only_columns), title=(f"Session data{' (subset)' if len(only_columns) > 0 else ''} for {self.name!r}"))
     # Return self to enable chaining
     return self
 
@@ -306,7 +308,7 @@ class Session:
     dataset_name  = self.json["dataset"]
     training_size = {"mnist": 60000, "fashionmnist": 60000, "cifar10": 50000, "cifar100": 50000}.get(dataset_name, None)
     if training_size is None:
-      tools.warning("Unknown dataset %r, cannot compute the epoch number" % dataset_name)
+      tools.warning(f"Unknown dataset {dataset_name!r}, cannot compute the epoch number")
       return
     self.data[column_name] = self.data["Training point count"] / training_size
     # Return self to enable chaining
@@ -325,15 +327,51 @@ class Session:
     if self.json is None or "learning_rate" not in self.json:
       tools.warning("No valid JSON-formatted configuration, cannot compute the learning rate")
       return
-    lr = self.json["learning_rate"]
-    lr_decay = self.json.get("learning_rate_decay", 0)
-    lr_delta = self.json.get("learning_rate_decay_delta", 1)
-    if lr_decay > 0:
-      self.data[column_name] = lr / ((self.data.index // lr_delta * lr_delta) / lr_decay + 1)
+    lr_schedule = self.json.get("learning_rate_schedule")
+    if lr_schedule is None:
+      lr = self.json["learning_rate"]
+      lr_decay = self.json.get("learning_rate_decay", 0)
+      lr_delta = self.json.get("learning_rate_decay_delta", 1)
+      if lr_decay > 0:
+        self.data[column_name] = lr / ((self.data.index // lr_delta * lr_delta) / lr_decay + 1)
+      else:
+        self.data[column_name] = lr
     else:
-      self.data[column_name] = lr
+      tools.warning("Learning rate schedule not yet supported for schedule generation")
     # Return self to enable chaining
     return self
+
+  def calc_max_ratio(self, nowarn=False):
+    """ Compute the maximum ratio std dev. / norm theoretically supported by the GAR, cache the result.
+    Args:
+      nowarn Do not issue a warning if the GAR does not have a known ratio
+    Returns:
+      Maximum ratio, None if unavailable
+    """
+    # Fast path
+    if self.thresh is not None:
+      if self.thresh < 0:  # Unavailable
+        return None
+      return self.thresh
+    # Compute and cache threshold
+    if self.json is None or not all(name in self.json for name in ("gar", "nb_workers", "nb_decl_byz")):
+      tools.warning("No valid JSON-formatted configuration, cannot compute the maximum variance-norm ratio for the GAR")
+      return
+    g = self.json["gar"]
+    rule = aggregators.gars.get(g, None)
+    if rule is not None and rule.upper_bound is not None:
+      n = self.json["nb_workers"]
+      f = self.json["nb_decl_byz"]
+      d = experiments.Model(self.json["model"], **self.json["model_args"], config=experiments.Configuration(device="cpu")).get().numel()
+      self.thresh = rule.upper_bound(n, f, d)
+    else:
+      if not nowarn:
+         tools.warning(f"GAR {g!r} has no known ratio threshold")
+      self.thresh = -1
+    # Return threshold
+    if self.thresh < 0:
+      return None
+    return self.thresh
 
   def compute_ratio(self, nowarn=False):
     """ Compute and append the ratios std. dev. / norm and whether the honest one was enough for the GAR, if not already done.
@@ -344,27 +382,16 @@ class Session:
     """
     # Compute ratio columns
     for clsname in ("Sampled", "Honest"): # "Honest" must be last (as used for validity column)
-      column_ratio_name = "%s ratio" % clsname
+      column_ratio_name = f"{clsname} ratio"
       if column_ratio_name not in self.data.columns:
-        self.data[column_ratio_name] = (self.data["%s gradient deviation" % clsname] / self.data["%s gradient norm" % clsname]) ** 2
+        self.data[column_ratio_name] = (self.data[f"{clsname} gradient deviation"] / self.data[f"{clsname} gradient norm"]) ** 2
     # Compute whether the honest ratio was enough for the GAR
     column_valid_name = "Ratio enough for GAR?"
     if column_valid_name not in self.data.columns:
-      if self.json is None or not all(name in self.json for name in ("gar", "nb_workers", "nb_decl_byz")):
-        tools.warning("No valid JSON-formatted configuration, cannot assert when the ratio was enough for the GAR")
-        return
-      g = self.json["gar"]
-      rule = aggregators.gars.get(g, None)
-      if rule is not None and rule.upper_bound is not None:
-        n = self.json["nb_workers"]
-        f = self.json["nb_decl_byz"]
-        d = experiments.Model(self.json["model"], config=experiments.Configuration(device="cpu")).get().numel()
-        valid_threshold = rule.upper_bound(n, f, d) ** 2
-      else:
-        if not nowarn:
-          tools.warning("GAR %r has no known ratio threshold" % g)
-        valid_threshold = 0
-      self.data[column_valid_name] = self.data[column_ratio_name] < valid_threshold
+      max_ratio = self.calc_max_ratio(nowarn=nowarn)
+      if max_ratio is not None:
+        valid_threshold = max_ratio ** 2
+        self.data[column_valid_name] = self.data[column_ratio_name] < valid_threshold
     # Return self to enable chaining
     return self
 
@@ -388,7 +415,7 @@ class LinePlot:
     Returns:
       Associated line style, line color
     """
-    return self.linestyles[ln % len(self.linestyles)], "C%d" % ln
+    return self.linestyles[ln % len(self.linestyles)], f"C{ln}"
 
   def __init__(self, index=None):
     """ Title constructor.
@@ -453,13 +480,13 @@ class LinePlot:
     if isinstance(data, Session):
       data = data.data
     elif not isinstance(data, pandas.DataFrame):
-      raise RuntimeError("Expected a Session or DataFrame for 'data', got a %r" % tools.fullqual(type(data)))
+      raise RuntimeError(f"Expected a Session or DataFrame for 'data', got a {tools.fullqual(type(data))!r}")
     # Get the x-axis values
     if self._idx is None:
       x = data.index.to_numpy()
     else:
       if self._idx not in data:
-        raise RuntimeError("No column named %r to use as index in the given session/dataframe" % (self._idx,))
+        raise RuntimeError(f"No column named {self._idx!r} to use as index in the given session/dataframe")
       x = data[self._idx].to_numpy()
     # Select semantic: empty list = select all
     if len(cols) == 0:
@@ -536,16 +563,146 @@ class LinePlot:
     self._ax.set_title(title)
     if zlabel is not None:
       if self._tax is None:
-        tools.warning("No secondary y-axis found, but its label %r was provided" % (zlabel,))
+        tools.warning(f"No secondary y-axis found, but its label {zlabel!r} was provided")
       else:
         self._tax.set_ylabel(zlabel)
     elif self._tax is not None:
-      tools.warning("No label provided for the secondary y-axis; using label %r from the primary" % (ylabel,))
+      tools.warning(f"No label provided for the secondary y-axis; using label {ylabel!r} from the primary")
       self._tax.set_ylabel(ylabel)
     self._ax.set_xlim(left=xmin, right=xmax)
     self._ax.set_ylim(bottom=ymin, top=ymax)
     if self._tax is not None:
       self._tax.set_ylim(bottom=zmin, top=zmax)
+    # Mark finalized
+    self._fin = True
+    # Return self for chaining
+    return self
+
+  def display(self):
+    """ Display the figure, which must have been finalized.
+    Returns:
+      self
+    """
+    # Assert already finalized
+    if not self._fin:
+      raise RuntimeError("Cannot display a plot that has not been finalized yet")
+    # Show the plot
+    self._fig.show()
+    # Return self for chaining
+    return self
+
+  def save(self, path, dpi=200, xsize=3, ysize=2):
+    """ Save the figure, which must have been finalized.
+    Args:
+      path  Path of the file to write
+      dpi   Output image DPI (very good quality printing is usually 300 DPI)
+      xsize Output image x-size (in cm)
+      ysize Output image y-size (in cm)
+    Returns:
+      self
+    """
+    # Assert already finalized
+    if not self._fin:
+      raise RuntimeError("Cannot display a plot that has not been finalized yet")
+    # Save the figure
+    self._fig.set_size_inches(xsize * 2.54, ysize * 2.54)
+    self._fig.set_dpi(dpi)
+    self._fig.savefig(path)
+    # Return self for chaining
+    return self
+
+  def close(self):
+    """ Explicitly "close" the associated figure (needed by pyplot), the instance cannot be used anymore after the call.
+    """
+    if self._fig is not None: # The documentation of 'plt.close' does not explicitly specify that multiple calls are allowed on the same 'Figure'
+      plt.close(self._fig)
+      self._fig = None
+
+class BoxPlot:
+  """ Box/violin plot management class.
+  """
+
+  def __init__(self, index=None):
+    """ Title constructor.
+    Args:
+      index Column name to use as the index instead of the default
+    """
+    # Make the subplots
+    fig, ax = plt.subplots()
+    # Store the non-finalized state
+    self._fin  = False  # Not yet finalized
+    self._fig  = fig    # Figure instance
+    self._ax   = ax     # Original axis instance
+    self._data = list() # Data: list of data array
+    self._lbls = list() # Data: list of labels
+    self._hls  = list() # List of horizontal line ordinates to plot
+
+  def __del__(self):
+    """ Close the figure on finalization.
+    """
+    self.close()
+
+  def include(self, data, label):
+    """ Add the columns of the given data frame, can only be done before finalization.
+    Args:
+      data  Series or (numpy) array to add
+      label Label for this data
+    Returns:
+      self
+    """
+    # Assert not already finalized
+    if self._fin:
+      raise RuntimeError("Plot is already finalized and cannot include another line")
+    # Recover the array if a series was given
+    if isinstance(data, pandas.Series):
+      data = data.to_numpy()
+    elif not any(isinstance(data, dtype) for dtype in (numpy.ndarray, list, tuple)):
+      raise RuntimeError(f"Expected a Series or an (numpy) array for 'data', got a {tools.fullqual(type(data))!r}")
+    # Append the data
+    self._data.append(data)
+    self._lbls.append(label)
+    # Return self for chaining
+    return self
+
+  def hline(self, y):
+    """ Add an horizontal line to the plot.
+    Args:
+      y Ordinate of the horizontal line
+    Returns:
+      self
+    """
+    # Push the ordinate
+    self._hls.append(y)
+    # Return self for chaining
+    return self
+
+  def finalize(self, title, ylabel, ymin=None, ymax=None, violin=False):
+    """ Finalize the plot, can be done only once and would prevent further inclusion.
+    Args:
+      title  Plot title
+      ylabel Label for the y-axis
+      ymin   Minimum for ordinate, if any
+      ymax   Maximum for ordinate, if any
+      violin Whether to use violin plots instead of box plots
+    Returns:
+      self
+    """
+    # Fast path
+    if self._fin:
+      return self
+    # Plot the grid and labels
+    self._ax.grid()
+    self._ax.set_title(title)
+    self._ax.set_ylabel(ylabel)
+    self._ax.set_ylim(bottom=ymin, top=ymax)
+    # Plot the data
+    for i, y in enumerate(self._hls):
+      self._ax.axhline(y, color=f"C{i}", linestyle="--")
+    if violin:
+      self._ax.violinplot(self._data, showmedians=True, showmeans=False, showextrema=False)
+    else:
+      self._ax.boxplot(self._data)
+    plt.setp(self._ax, xticks=list(range(1, len(self._data) + 1)), xticklabels=self._lbls)
     # Mark finalized
     self._fin = True
     # Return self for chaining

@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -74,13 +74,13 @@ def check(grad_honests, f_real, defense, epsilon=1, **kwargs):
     Whether the given parameters are valid for this attack
   """
   if not isinstance(grad_honests, list) or len(grad_honests) == 0:
-    return "Expected a non-empty list of honest gradients, got %r" % (grad_honests,)
+    return f"Expected a non-empty list of honest gradients, got {grad_honests!r}"
   if not isinstance(f_real, int) or f_real < 0:
-    return "Expected a non-negative number of Byzantine gradients to generate, got %r" % (f_real,)
+    return f"Expected a non-negative number of Byzantine gradients to generate, got {f_real!r}"
   if not callable(defense):
-    return "Expected a callable for the aggregation rule, got %r" % (defense,)
+    return f"Expected a callable for the aggregation rule, got {defense!r}"
   if not isinstance(epsilon, int) or epsilon == 0:
-    return "Expected a non-zero attack epsilon, got %r" % (epsilon,)
+    return f"Expected a non-zero attack epsilon, got {epsilon!r}"
 
 # ---------------------------------------------------------------------------- #
 # Attack registration

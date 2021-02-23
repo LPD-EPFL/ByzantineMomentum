@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2018-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -34,13 +34,22 @@ def check(gradients, **kwargs):
     gradients Non-empty list of gradients to aggregate
     ...       Ignored keyword-arguments
   Returns:
-    Whether the given parameters are valid for this rule
+    None if valid, otherwise error message string
   """
   if not isinstance(gradients, list) or len(gradients) < 1:
-    return "Expected a list of at least one gradient to aggregate, got %r" % gradients
+    return f"Expected a list of at least one gradient to aggregate, got {gradients!r}"
+
+def influence(honests, attacks, **kwargs):
+  """ Compute the ratio of accepted Byzantine gradients.
+  Args:
+    honests Non-empty list of honest gradients to aggregate
+    attacks List of attack gradients to aggregate
+    ...     Ignored keyword-arguments
+  """
+  return len(attacks) / (len(honests) + len(attacks))
 
 # ---------------------------------------------------------------------------- #
 # GAR registering
 
 # Register aggregation rule
-register("average", aggregate, check)
+register("average", aggregate, check, influence=influence)

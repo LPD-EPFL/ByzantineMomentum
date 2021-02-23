@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -97,4 +97,5 @@ class Configuration(Mapping):
       Python-code string evaluating (under conditions) to this configuration
     """
     display = {"non_blocking": "noblock"}
-    return "Configuration(%s, relink=%s)" % ((", ").join(("%s=%r" % (display.get(key, key), val)) for key, val in self._args.items()), self.relink)
+    argrepr = (", ").join(f"{display.get(key, key)}={val!r}" for key, val in self._args.items())
+    return f"Configuration({argrepr}, relink={self.relink})"

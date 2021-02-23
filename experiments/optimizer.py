@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -92,7 +92,7 @@ class Optimizer:
     Returns:
       Nicely printable string
     """
-    return "optimizer %s" % self._name
+    return f"optimizer {self._name}"
 
   def set_lr(self, lr):
     """ Set the learning rate of the optimizer

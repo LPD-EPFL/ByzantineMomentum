@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -142,14 +142,14 @@ class Loss:
     Returns:
       Formatted part
     """
-    return "%s%s" % ("" if self._fact is None else "%s × " % self._fact, self._name)
+    return self._name if self._fact is None else f"{self._fact} × {self._name}"
 
   def __str__(self):
     """ Compute the "informal", nicely printable string representation of this loss.
     Returns:
       Nicely printable string
     """
-    return "loss %s" % self._str_make()
+    return f"loss {self._str_make()}"
 
   def __call__(self, output, target, params):
     """ Compute the loss from the output and the target.
@@ -174,7 +174,7 @@ class Loss:
     """
     def add(output, target, params):
       return self(output, target, params) + loss(output, target, params)
-    return type(self)(type(self).__reserved_init, add, None, "(%s + %s)" % (self._str_make(), loss._str_make()))
+    return type(self)(type(self).__reserved_init, add, None, f"({self._str_make()} + {loss._str_make()})")
 
   def __mul__(self, factor):
     """ Multiply the current loss by a given factor.
@@ -233,6 +233,24 @@ class Criterion:
       res = (output.topk(self.k, dim=1)[1] == target.view(-1).unsqueeze(1)).any(dim=1).sum()
       return torch.cat((res.unsqueeze(0), torch.tensor(target.shape[0], dtype=res.dtype, device=res.device).unsqueeze(0)))
 
+  class _SigmoidCriterion:
+    """ Sigmoid criterion helper class.
+    """
+
+    def __call__(self, output, target):
+      """ Compute the criterion from the output and the target.
+      Args:
+        output Batch × model logits (expected in [0, 1])
+        target Batch × target index (expected in {0, 1})
+      Returns:
+        1D-tensor [#correct classification, batch size]
+      """
+      correct = target.sub(output).abs_() < 0.5
+      res = torch.empty(2, dtype=output.dtype, device=output.device)
+      res[0] = correct.sum()
+      res[1] = len(correct)
+      return res
+
   # Map 'lower-case names' -> 'loss constructor' available in PyTorch
   __criterions = None
 
@@ -247,7 +265,8 @@ class Criterion:
       return self.__criterions
     # Initialize the dictionary
     self.__criterions = {
-      "top-k": self._TopkCriterion }
+      "top-k": self._TopkCriterion,
+      "sigmoid": self._SigmoidCriterion }
     # Return the dictionary
     return self.__criterions
 
@@ -278,7 +297,7 @@ class Criterion:
     Returns:
       Nicely printable string
     """
-    return "criterion %s" % self._name
+    return f"criterion {self._name}"
 
   def __call__(self, output, target):
     """ Compute the criterion from the output and the target.

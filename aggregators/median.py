@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2018-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -54,10 +54,10 @@ def check(gradients, **kwargs):
     gradients Non-empty list of gradients to aggregate
     ...       Ignored keyword-arguments
   Returns:
-    Whether the given parameters are valid for this rule
+    None if valid, otherwise error message string
   """
   if not isinstance(gradients, list) or len(gradients) < 1:
-    return "Expected a list of at least one gradient to aggregate, got %r" % gradients
+    return f"Expected a list of at least one gradient to aggregate, got {gradients!r}"
 
 def upper_bound(n, f, d):
   """ Compute the theoretical upper bound on the ratio non-Byzantine standard deviation / norm to use this rule.
@@ -84,4 +84,4 @@ if native is not None:
   if native_name in dir(native):
     register(method_name, aggregate_native, check, upper_bound)
   else:
-    tools.warning("GAR %r could not be registered since the associated native module %r is unavailable" % (method_name, native_name))
+    tools.warning(f"GAR {method_name!r} could not be registered since the associated native module {native_name!r} is unavailable")

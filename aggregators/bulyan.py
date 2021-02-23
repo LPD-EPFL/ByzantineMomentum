@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2018-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -107,14 +107,14 @@ def check(gradients, f, m=None, **kwargs):
     m         Optional number of averaged gradients for Multi-Krum
     ...       Ignored keyword-arguments
   Returns:
-    Whether the given parameters are valid for this rule
+    None if valid, otherwise error message string
   """
   if not isinstance(gradients, list) or len(gradients) < 1:
-    return "Expected a list of at least one gradient to aggregate, got %r" % gradients
-  if not isinstance(f, int) or f < 1 or len(gradients) < 2 * f + 3:
-    return "Invalid number of Byzantine gradients to tolerate, got f = %r, expected 1 ≤ f ≤ %d" % (f, (len(gradients) - 3) // 4)
+    return f"Expected a list of at least one gradient to aggregate, got {gradients!r}"
+  if not isinstance(f, int) or f < 1 or len(gradients) < 4 * f + 3:
+    return f"Invalid number of Byzantine gradients to tolerate, got f = {f!r}, expected 1 ≤ f ≤ {(len(gradients) - 3) // 4}"
   if m is not None and (not isinstance(m, int) or m < 1 or m > len(gradients) - f - 2):
-    return "Invalid number of selected gradients, got m = %r, expected 1 ≤ m ≤ %d" % (f, len(gradients) - f - 2)
+    return f"Invalid number of selected gradients, got m = {m!r}, expected 1 ≤ m ≤ {len(gradients) - f - 2}"
 
 def upper_bound(n, f, d):
   """ Compute the theoretical upper bound on the ratio non-Byzantine standard deviation / norm to use this rule.
@@ -132,13 +132,13 @@ def upper_bound(n, f, d):
 
 # Register aggregation rule (pytorch version)
 method_name = "bulyan"
-register(method_name, aggregate, check, upper_bound)
+register(method_name, aggregate, check, upper_bound=upper_bound)
 
 # Register aggregation rule (native version, if available)
 if native is not None:
   native_name = method_name
   method_name = "native-" + method_name
   if native_name in dir(native):
-    register(method_name, aggregate_native, check, upper_bound)
+    register(method_name, aggregate_native, check, upper_bound=upper_bound)
   else:
-    tools.warning("GAR %r could not be registered since the associated native module %r is unavailable" % (method_name, native_name))
+    tools.warning(f"GAR {method_name!r} could not be registered since the associated native module {native_name!r} is unavailable")

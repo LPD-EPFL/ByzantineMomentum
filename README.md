@@ -1,43 +1,47 @@
-# Distributed Momentum for Byzantine-resilient Learning
+# Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent
 
 Authors<sup>1</sup>: El-Mahdi El-Mhamdi, Rachid Guerraoui, Sébastien Rouault
 
-This is the code used for the experiments of [Distributed Momentum for Byzantine-resilient Learning](https://arxiv.org/abs/2003.00010),\
-co-authored by El-Mahdi El-Mhamdi and Sébastien Rouault, under the supervision of Rachid Guerraoui.
+This is the code used in the experiments of [Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent](https://openreview.net/forum?id=H8UHdhWG6A3),\
+co-authored by El-Mahdi El-Mhamdi, Rachid Guerraoui and Sébastien Rouault.
 
-<sup>1</sup><sub>alphabetical order, as for all the papers from the _Distributed Computing Laboratory_ (DCL, previously LPD) of EPFL.</sub>
+<sup>1</sup><sub>alphabetical order, as for all the papers from the _Distributed Computing Laboratory_ (DCL) of EPFL.</sub>
 
-## Reproducing the results (see [the paper](https://arxiv.org/pdf/2003.00010))
+## Reproducing the results (see [the paper](https://openreview.net/pdf?id=H8UHdhWG6A3))
 
 ### Software dependencies
 
 Python 3.7.3 has been used to run our scripts.
 
-Besides the standard libraries associated with Python 3.7.3, our scripts also depend on<sup>2</sup>:
+Besides the standard libraries associated with Python 3.7.3, our scripts have been tested with<sup>2</sup>:
 
-| Library     | Version |
-| ----------- | ------- |
-| numpy       | 1.17.2  |
-| torch       | 1.2.0   |
-| torchvision | 0.4.0   |
-| pandas      | 0.25.1  |
-| matplotlib  | 3.0.2   |
-| tqdm        | 4.40.2  |
-| PIL         | 6.1.0   |
-| six         | 1.12.0  |
-| pytz        | 2019.3  |
-| dateutil    | 2.7.3   |
-| pyparsing   | 2.2.0   |
-| cycler      | 0.10.0  |
-| kiwisolver  | 1.0.1   |
-| cffi        | 1.13.2  |
+| Library     | Version    |
+| ----------- | ---------- |
+| numpy       | 1.19.1     |
+| torch       | 1.6.0      |
+| torchvision | 0.7.0      |
+| pandas      | 1.1.0      |
+| matplotlib  | 3.0.2      |
+| PIL         | 7.2.0      |
+| requests    | 2.21.0     |
+| urllib3     | 1.24.1     |
+| chardet     | 3.0.4      |
+| certifi     | 2018.08.24 |
+| idna        | 2.6        |
+| six         | 1.15.0     |
+| pytz        | 2020.1     |
+| dateutil    | 2.6.1      |
+| pyparsing   | 2.2.0      |
+| cycler      | 0.10.0     |
+| kiwisolver  | 1.0.1      |
+| cffi        | 1.13.2     |
 
 <sup>2</sup><sub>this list was automatically generated (see `get_loaded_dependencies()` in `tools/misc.py`).
 Some dependencies depend on others, and some dependencies are optional (e.g., only used to process the results and produce the plots).</sub>
 
 We list below the OS on which our scripts have been tested:
-* Debian 10 (GNU/Linux 4.19.0-6 x86_64)
-* Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-58 x86_64)
+* Debian 10 (GNU/Linux 4.19.171-2 x86_64)
+* Ubuntu 18.04.5 LTS (GNU/Linux 4.15.0-128-generic x86_64)
 
 ### Hardware dependencies
 
@@ -48,33 +52,35 @@ Although our experiments are time-agnostic, we list below the hardware component
 
 ### Command
 
-Our results, i.e. the experiments and graphs, are reproducible in one command.\
-In the root directory, please run:
-
+Our results are reproducible in one command.
+In the root directory of the ZIP file:
 ```
 $ python3 reproduce.py
 ```
+On our hardware, reproducing the results takes a bit less than a week.
 
-On our hardware, reproducing the results takes ∼ 24 hours.
+Please be aware this script will require non-negligible disk space: 2.1 GB of run data, and 132 MB of graphs.
+
+Depending on the hardware, instructing the script to launch several runs per available GPU may reduce the total runtime.
+For instance, to push up to 4 concurrent runs per GPU:
+```
+$ python3 reproduce.py --supercharge 4
+```
 
 ### Citation
 
 If you are using algorithms, results or code from this paper, you can include in your bibliography:
 ```
-@ARTICLE{2020arXiv200300010E,
-       author = {{El-Mhamdi}, El-Mahdi and {Guerraoui}, Rachid and {Rouault}, S{\'e}bastien},
-        title = "{Distributed Momentum for Byzantine-resilient Learning}",
-      journal = {arXiv e-prints},
-     keywords = {Computer Science - Machine Learning, Computer Science - Cryptography and Security, Computer Science - Distributed, Parallel, and Cluster Computing},
-         year = 2020,
-        month = feb,
-          eid = {arXiv:2003.00010},
-        pages = {arXiv:2003.00010},
-archivePrefix = {arXiv},
-       eprint = {2003.00010},
- primaryClass = {cs.LG},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2020arXiv200300010E},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+@inproceedings{distributed-momentum,
+  author    = {El-Mahdi El-Mhamdi and
+               Rachid Guerraoui and
+               S\'{e}bastien Rouault},
+  title     = {Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent},
+  booktitle = {9th International Conference on Learning Representations, {ICLR} 2021,
+               Vienna, Austria, May 4–8, 2021},
+  publisher = {OpenReview.net},
+  year      = {2021},
+  url       = {https://openreview.net/forum?id=H8UHdhWG6A3},
 }
 ```
 

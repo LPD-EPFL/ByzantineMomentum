@@ -5,15 +5,15 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
  # Collection of simple models.
 ###
 
-__all__ = ["full", "conv"]
+__all__ = ["full", "conv", "logit", "linear"]
 
 import torch
 
@@ -96,3 +96,81 @@ def conv(*args, **kwargs):
   """
   global _Conv
   return _Conv(*args, **kwargs)
+
+# ---------------------------------------------------------------------------- #
+# Simple(r) logistic regression model
+
+class _Logit(torch.nn.Module):
+  """ Simple logistic regression model.
+  """
+
+  def __init__(self, din, dout=1):
+    """ Model parameter constructor.
+    Args:
+      din  Number of input dimensions
+      dout Number of output dimensions
+    """
+    super().__init__()
+    # Store model parameters
+    self._din  = din
+    self._dout = dout
+    # Build parameters
+    self._linear = torch.nn.Linear(din, dout)
+
+  def forward(self, x):
+    """ Model's forward pass.
+    Args:
+      x Input tensor
+    Returns:
+      Output tensor
+    """
+    return torch.sigmoid(self._linear(x.view(-1, self._din)))
+
+def logit(*args, **kwargs):
+  """ Build a new simple, fully connected model.
+  Args:
+    ... Forwarded (keyword-)arguments
+  Returns:
+    Fully connected model
+  """
+  global _Logit
+  return _Logit(*args, **kwargs)
+
+# ---------------------------------------------------------------------------- #
+# Simple(st) linear model
+
+class _Linear(torch.nn.Module):
+  """ Simple linear model.
+  """
+
+  def __init__(self, din, dout=1):
+    """ Model parameter constructor.
+    Args:
+      din  Number of input dimensions
+      dout Number of output dimensions
+    """
+    super().__init__()
+    # Store model parameters
+    self._din  = din
+    self._dout = dout
+    # Build parameters
+    self._linear = torch.nn.Linear(din, dout)
+
+  def forward(self, x):
+    """ Model's forward pass.
+    Args:
+      x Input tensor
+    Returns:
+      Output tensor
+    """
+    return self._linear(x.view(-1, self._din))
+
+def linear(*args, **kwargs):
+  """ Build a new simple, fully connected model.
+  Args:
+    ... Forwarded (keyword-)arguments
+  Returns:
+    Fully connected model
+  """
+  global _Linear
+  return _Linear(*args, **kwargs)

@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -98,15 +98,15 @@ def check(grad_honests, f_real, defense, factor=-16, negative=False, **kwargs):
     Whether the given parameters are valid for this attack
   """
   if not isinstance(grad_honests, list) or len(grad_honests) == 0:
-    return "Expected a non-empty list of honest gradients, got %r" % (grad_honests,)
+    return f"Expected a non-empty list of honest gradients, got {grad_honests!r}"
   if not isinstance(f_real, int) or f_real < 0:
-    return "Expected a non-negative number of Byzantine gradients to generate, got %r" % (f_real,)
+    return f"Expected a non-negative number of Byzantine gradients to generate, got {f_real!r}"
   if not callable(defense):
-    return "Expected a callable for the aggregation rule, got %r" % (defense,)
+    return f"Expected a callable for the aggregation rule, got {defense!r}"
   if not ((isinstance(factor, float) and factor > 0) or (isinstance(factor, int) and factor != 0)):
-    return "Expected a positive number or a negative integer for the attack factor, got %r" % (factor,)
+    return f"Expected a positive number or a negative integer for the attack factor, got {factor!r}"
   if not isinstance(negative, bool):
-    return "Expected a boolean for optional parameter 'negative', got %r" % (negative,)
+    return f"Expected a boolean for optional parameter 'negative', got {negative!r}"
 
 # ---------------------------------------------------------------------------- #
 # Attack vector computations
@@ -121,7 +121,7 @@ def bulyan(grad_stck, grad_avg, target_idx=-1, **kwargs):
   if target_idx == "all":
     return torch.ones_like(grad_avg)
   else:
-    assert isinstance(target_idx, int), "Expected an integer or \"all\" for 'target_idx', got %r" % (target_idx,)
+    assert isinstance(target_idx, int), f"Expected an integer or \"all\" for 'target_idx', got {target_idx!r}"
     grad_att = torch.zeros_like(grad_avg)
     grad_att[target_idx] = 1
     return grad_att

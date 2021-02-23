@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -17,7 +17,7 @@
  # The reserved argument names, and their interface, are the following:
  # · grad_honest: Non-empty list of honest gradients generated
  # · f_decl     : Number of declared Byzantine gradients at the GAR
- # · f_byz      : Number of actual Byzantine gradients to generate
+ # · f_real     : Number of actual Byzantine gradients to generate
  # · model      : Model (duck-typing 'experiments.Model') with valid default dataset and loss set
  # · defense    : Aggregation rule (see module 'aggregators') in use to defeat
  # The attack, given "valid" parameter(s), MUST return a list of f_byz tensor(s).
@@ -53,18 +53,18 @@ def register(name, unchecked, check):
   global attacks
   # Check if name already in use
   if name in attacks:
-    tools.warning("Unable to register %r attack: name already in use" % name)
+    tools.warning(f"Unable to register {name!r} attack: name already in use")
     return
   # Closure wrapping the call with checks
   def checked(f_real, **kwargs):
     # Check parameter validity
     message = check(f_real=f_real, **kwargs)
     if message is not None:
-      raise tools.UserException("Attack %r cannot be used with the given parameters: %s" % (name, message))
+      raise tools.UserException(f"Attack {name!r} cannot be used with the given parameters: {message}")
     # Attack
     res = unchecked(f_real=f_real, **kwargs)
     # Forward asserted return value
-    assert isinstance(res, list) and len(res) == f_real, "Expected attack %r to return a list of %f Byzantine gradients, got %r" % (name, f_real, res)
+    assert isinstance(res, list) and len(res) == f_real, f"Expected attack {name!r} to return a list of {f_real} Byzantine gradients, got {res!r}"
     return res
   # Select which function to call by default
   func = checked if __debug__ else unchecked

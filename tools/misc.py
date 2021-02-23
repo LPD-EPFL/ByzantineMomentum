@@ -5,8 +5,8 @@
  #
  # @section LICENSE
  #
- # Copyright © 2018-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2018-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
@@ -14,9 +14,10 @@
 ###
 
 __all__ = [
-  "UnavailableException", "fatal_unavailable", "MethodCallReplicator", "ClassRegister",
-  "parse_keyval", "fullqual", "onetime", "TimedContext", "interactive",
-  "get_loaded_dependencies", "line_maximize", "pairwise"]
+  "UnavailableException", "fatal_unavailable", "MethodCallReplicator",
+  "ClassRegister", "parse_keyval", "fullqual", "onetime", "TimedContext",
+  "interactive", "get_loaded_dependencies", "line_maximize", "pairwise",
+  "localtime", "deltatime_point", "deltatime_format"]
 
 import os
 import pathlib
@@ -40,12 +41,12 @@ def make_unavailable_exception_text(data, name, what="entry"):
   """
   # Preparation
   if len(data) == 0:
-    end = "no %s available" % what
+    end = f"no {what} available"
   else:
-    sep = "%s· " % os.linesep
-    end = "expected one of:%s%s" % (sep, sep.join(data))
+    sep = f"{os.linesep}· "
+    end = f"expected one of:{sep}{sep.join(data)}"
   # Final string cat
-  return "Unknown %s %r, %s" % (what, name, end)
+  return f"Unknown {what} {name!r}, {end}"
 
 def fatal_unavailable(*args, **kwargs):
   """ Helper forwarding the 'UnavailableException' explanatory string to 'fatal'.
@@ -250,7 +251,7 @@ def fullqual(obj):
     prelude = "instance of "
     obj = type(obj)
   # Rebuilding
-  return "%s%s.%s" % (prelude, getattr(obj, "__module__", "<unknown module>"), getattr(obj, "__qualname__", "<unknown name>"))
+  return f"{prelude}{getattr(obj, '__module__', '<unknown module>')}.{getattr(obj, '__qualname__', '<unknown name>')}"
 
 # ---------------------------------------------------------------------------- #
 # Basic "full-qualification" string builder for a given instance/class
@@ -304,7 +305,7 @@ onetime_register = dict()
 # Plain context augmented with simple execution time measurement
 
 class TimedContext(tools.Context):
-  """ Timed context class.
+  """ Timed context class, that print the measure runtime.
   """
 
   def __init__(self, *args, **kwargs):
@@ -327,16 +328,17 @@ class TimedContext(tools.Context):
     Args:
       ... Forwarded arguments
     """
-    # Measure elapsed time (in ns)
-    elapsed = (time.time() - self._chrono) * 1000000000.
-    # Print elapsed time
-    for text in ["ns", "µs", "ms"]:
-      if elapsed < 1000.:
+    # Measure elapsed runtime (in ns)
+    runtime = (time.time() - self._chrono) * 1000000000.
+    # Recover ideal unit
+    for unit in ("ns", "µs", "ms"):
+      if runtime < 1000.:
         break
-      elapsed /= 1000.
+      runtime /= 1000.
     else:
-      text = "s"
-    tools.trace("Execution time: %.3f %s" % (elapsed, text))
+      unit = "s"
+    # Format and print string
+    tools.trace(f"Execution time: {runtime:.3g} {unit}")
     # Forward call
     super().__exit__(*args, **kwargs)
 
@@ -525,3 +527,44 @@ def pairwise(data):
   for i in range(n - 1):
     for j in range(i + 1, n):
       yield (data[i], data[j])
+
+# ---------------------------------------------------------------------------- #
+# Simple duration helpers
+
+def localtime():
+  """ Return the formatted local time.
+  Returns:
+    Human-readable local time
+  """
+  lt = time.localtime()
+  return f"{lt.tm_year:04}/{lt.tm_mon:02}/{lt.tm_mday:02} {lt.tm_hour:02}:{lt.tm_min:02}:{lt.tm_sec:02}"
+
+def deltatime_point():
+  """ Take a point in time.
+  Returns:
+    Opaque point-in-time
+  """
+  point = time.monotonic_ns()
+  return (point + 5 * 10 ** 8) // 10 ** 9
+
+def deltatime_format(a, b):
+  """ Compute and format the time elapsed between two points in time.
+  Args:
+    a Earlier point-in-time
+    b Later point-in-time
+  Returns:
+    Elapsed time integer (in s),
+    Formatted elapsed time string (human-readable way)
+  """
+  # Elapsed time (in seconds)
+  t = b - a
+  # Elapsed time (formatted)
+  d = t
+  s = d % 60
+  d //= 60
+  m = d % 60
+  d //= 60
+  h = d % 24
+  d //= 24
+  # Return elapsed time
+  return t, f"{d} day(s), {h} hour(s), {m} min(s), {s} sec(s)"

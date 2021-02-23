@@ -5,12 +5,13 @@
  #
  # @section LICENSE
  #
- # Copyright © 2019-2020 École Polytechnique Fédérale de Lausanne (EPFL).
- # All rights reserved.
+ # Copyright © 2019-2021 École Polytechnique Fédérale de Lausanne (EPFL).
+ # See LICENSE file.
  #
  # @section DESCRIPTION
  #
  # The model from "Fall of Empires: Breaking Byzantine-tolerant SGD by Inner Product Manipulation".
+ # (The original paper did not include the CIFAR-100 variant.)
 ###
 
 __all__ = ["cnn"]
@@ -18,14 +19,16 @@ __all__ = ["cnn"]
 import torch
 
 # ---------------------------------------------------------------------------- #
-# Simple convolutional model, for CIFAR-10 (3 input channels)
+# Simple convolutional model, for CIFAR-10/100 (3 input channels)
 
 class _CNN(torch.nn.Module):
   """ Simple, small convolutional model.
   """
 
-  def __init__(self):
+  def __init__(self, cifar100=False):
     """ Model parameter constructor.
+    Args:
+        cifar100 Build the CIFAR-100 variant (instead of the CIFAR-10)
     """
     super().__init__()
     # Build parameters
@@ -41,9 +44,13 @@ class _CNN(torch.nn.Module):
     self._b4 = torch.nn.BatchNorm2d(self._c4.out_channels)
     self._m2 = torch.nn.MaxPool2d(2)
     self._d2 = torch.nn.Dropout(p=0.25)
-    self._f1 = torch.nn.Linear(8192, 128)
     self._d3 = torch.nn.Dropout(p=0.25)
-    self._f2 = torch.nn.Linear(self._f1.out_features, 10)
+    if cifar100: # CIFAR-100
+        self._f1 = torch.nn.Linear(8192, 256)
+        self._f2 = torch.nn.Linear(self._f1.out_features, 100)
+    else: # CIFAR-10
+        self._f1 = torch.nn.Linear(8192, 128)
+        self._f2 = torch.nn.Linear(self._f1.out_features, 10)
 
   def forward(self, x):
     """ Model's forward pass.

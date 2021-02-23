@@ -2,7 +2,7 @@
 
 Authors<sup>1</sup>: El-Mahdi El-Mhamdi, Rachid Guerraoui, Sébastien Rouault
 
-This is the code used in the experiments of [Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent](https://openreview.net/forum?id=H8UHdhWG6A3),\
+This is the code used in the experiments of [Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent](https://openreview.net/forum?id=H8UHdhWG6A3),
 co-authored by El-Mahdi El-Mhamdi, Rachid Guerraoui and Sébastien Rouault.
 
 <sup>1</sup><sub>alphabetical order, as for all the papers from the _Distributed Computing Laboratory_ (DCL) of EPFL.</sub>
@@ -165,3 +165,5 @@ In directory `attacks`:
   the interface of these functions is specified in the docstring of `__init__.py`
 * use your new attack with the `--attack` command-line argument of `attack.py`;\
   arbitrary, additional keyword-arguments can be passed with `--attack-args`
+
+Following the same principle, new datasets can be added in `experiments/datasets`.

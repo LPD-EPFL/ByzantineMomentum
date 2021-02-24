@@ -2,7 +2,7 @@
 
 Authors<sup>1</sup>: El-Mahdi El-Mhamdi, Rachid Guerraoui, Sébastien Rouault
 
-This is the code used in the experiments of [Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent](https://openreview.net/forum?id=H8UHdhWG6A3),
+This is the code used in the experiments of [Distributed Momentum for Byzantine-resilient Stochastic Gradient Descent](https://openreview.net/forum?id=H8UHdhWG6A3) (ICLR 2021),
 co-authored by El-Mahdi El-Mhamdi, Rachid Guerraoui and Sébastien Rouault.
 
 <sup>1</sup><sub>alphabetical order, as for all the papers from the _Distributed Computing Laboratory_ (DCL) of EPFL.</sub>
@@ -53,7 +53,7 @@ Although our experiments are time-agnostic, we list below the hardware component
 ### Command
 
 Our results are reproducible in one command.
-In the root directory of the ZIP file:
+In the root directory:
 ```
 $ python3 reproduce.py
 ```

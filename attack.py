@@ -776,7 +776,7 @@ with tools.Context("training", "info"):
           if args.gradient_clip is not None:
             grad_norm = grad.norm().item()
             if grad_norm > args.gradient_clip:
-              grad.div_(grad_norm)
+              grad.mul_(args.gradient_clip / grad_norm)
           grad_sampleds.append(grad.clone().detach_())
         # Restore parameters (server-side momentum)
         if args.momentum_at != "worker":
@@ -791,7 +791,7 @@ with tools.Context("training", "info"):
           if args.gradient_clip is not None:
             grad_norm = grad.norm().item()
             if grad_norm > args.gradient_clip:
-              grad.div_(grad_norm)
+              grad.mul_(args.gradient_clip / grad_norm)
           grad_sampleds.append(grad.clone().detach_())
     else: # Multi-steps SGD
       # NOTE: See previous version to do code review
